@@ -437,7 +437,7 @@ function granolaOpenManualModal(dealId) {
         </div>
         <div>
           <h3 class="text-sm font-bold">Log a Call</h3>
-          <p class="text-xs text-surface-400 mt-0.5">Enter details or paste a Granola transcript — AI will extract insights automatically</p>
+          <p class="text-xs text-surface-400 mt-0.5">Enter details or paste meeting notes — AI will extract insights automatically</p>
         </div>
       </div>
 
@@ -460,10 +460,10 @@ function granolaOpenManualModal(dealId) {
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-semibold">Notes / Transcript <span class="text-red-400">*</span></label>
-            <span class="text-xs text-surface-400 flex items-center gap-1">${_gIcon(11)} Paste Granola transcript for AI analysis</span>
+            <span class="text-xs text-surface-400">Paste transcript for AI analysis</span>
           </div>
           <textarea id="g-man-notes" class="input-field h-36 resize-none font-mono text-xs leading-relaxed"
-            placeholder="Paste raw Granola transcript, meeting notes, or bullet-point summary here.&#10;AI will clean, structure, and extract action items, red flags, and insights automatically…"></textarea>
+            placeholder="Paste a meeting transcript, your notes, or a bullet-point summary here.&#10;AI will clean, structure, and extract action items, red flags, and insights automatically…"></textarea>
         </div>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" onclick="closeModal()" class="btn-secondary">Cancel</button>
@@ -729,22 +729,17 @@ async function _applyDealUpdates(updates, deal, dealId) {
 // ── Calls tab renderer ───────────────────────────
 
 async function renderDealCallsTab() {
-  const [deal, allCalls, settings] = await Promise.all([
+  const [deal, allCalls] = await Promise.all([
     DB.get(STORES.deals, currentDealId),
     DB.getForUser(STORES.calls, currentUser.id),
-    DB.get(STORES.settings, `settings_${currentUser.id}`).catch(() => null),
   ]);
 
   // Filter to calls linked to this deal
   const calls = allCalls.filter(c => c.dealId === currentDealId);
   calls.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const hasGranola = !!(settings?.granolaApiKey?.trim());
-  const hasAI      = !!(settings?.openaiApiKey || settings?.claudeApiKey);
-
   return `
     <div class="space-y-5">
-      ${_renderBanner(hasGranola, hasAI)}
 
       <!-- Action bar -->
       <div class="flex items-center justify-between gap-3">
@@ -752,82 +747,40 @@ async function renderDealCallsTab() {
           ${calls.length} Call${calls.length !== 1 ? 's' : ''} Logged
         </p>
         <div class="flex items-center gap-2">
-          ${hasGranola ? `
-            <button onclick="granolaOpenImportModal('${currentDealId}')"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#7C5CFC] hover:bg-[#6B4EE6] text-white shadow-sm transition-all">
-              ${_gIcon(12)} Import from Granola
-            </button>` : ''}
           <button onclick="granolaOpenManualModal('${currentDealId}')" class="btn-secondary btn-sm">
-            + Log Manually
+            + Log Call
           </button>
         </div>
       </div>
 
       <!-- Content -->
       ${calls.length === 0
-        ? _renderEmpty(hasGranola)
+        ? _renderEmpty()
         : `<div class="space-y-3">${calls.map(_renderCard).join('')}</div>`}
     </div>`;
 }
 
 // ── Banner ───────────────────────────────────────
 
-function _renderBanner(hasGranola, hasAI) {
-  if (hasGranola) {
-    return `
-      <div class="g-banner g-banner--on">
-        <div class="flex items-start gap-3 min-w-0">
-          <div class="g-banner-icon flex-shrink-0">${_gIcon(18)}</div>
-          <div class="min-w-0">
-            <p class="text-sm font-bold text-[#7C5CFC] dark:text-[#A78BFA]">Granola Connected</p>
-            <p class="text-xs text-surface-500 dark:text-surface-400 mt-0.5 leading-relaxed">
-              Meetings recorded in Granola can be imported here in one click — AI will clean the transcript,
-              extract action items, flag red flags, and track deal progress automatically.
-            </p>
-          </div>
-        </div>
-        <button onclick="navigate('settings')" class="g-banner-link whitespace-nowrap">Manage key →</button>
-      </div>`;
-  }
-  return `
-    <div class="g-banner g-banner--off">
-      <div class="g-banner-icon">${_gIcon(24)}</div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold mb-0.5">Connect Granola for automatic meeting intelligence</p>
-        <p class="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-          Granola records and transcribes your calls with founders. Connect it here and every meeting is imported,
-          AI-summarised, and linked to this deal automatically.
-        </p>
-      </div>
-      <button onclick="navigate('settings')"
-        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-[#7C5CFC] hover:bg-[#6B4EE6] text-white shadow-sm transition-all whitespace-nowrap flex-shrink-0">
-        ${_gIcon(13)} Add API Key
-      </button>
-    </div>`;
+function _renderBanner() {
+  return '';
 }
 
 // ── Empty state ──────────────────────────────────
 
-function _renderEmpty(hasGranola) {
+function _renderEmpty() {
   return `
     <div class="rounded-2xl border-2 border-dashed border-surface-200 dark:border-surface-700 p-12 text-center">
-      <div class="w-14 h-14 rounded-2xl bg-[#7C5CFC]/8 dark:bg-[#7C5CFC]/15 flex items-center justify-center mx-auto mb-4">
-        ${_gIcon(28)}
+      <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
       </div>
       <h4 class="text-sm font-bold mb-1.5">No calls logged yet</h4>
       <p class="text-xs text-surface-400 max-w-xs mx-auto mb-6 leading-relaxed">
-        ${hasGranola
-          ? 'Import a meeting from Granola or log one manually. AI will transcribe and analyse every call automatically.'
-          : 'Log calls manually or connect Granola to auto-import transcribed meetings with AI analysis.'}
+        Log a call manually or use the built-in meeting recorder. AI will clean notes and extract key insights automatically.
       </p>
       <div class="flex items-center justify-center gap-2 flex-wrap">
-        ${hasGranola ? `
-          <button onclick="granolaOpenImportModal('${currentDealId}')"
-            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-[#7C5CFC] hover:bg-[#6B4EE6] text-white shadow-sm transition-all">
-            ${_gIcon(14)} Import from Granola
-          </button>` : ''}
         <button onclick="granolaOpenManualModal('${currentDealId}')" class="btn-secondary">
-          + Log Manually
+          + Log Call
         </button>
       </div>
     </div>`;
@@ -861,8 +814,8 @@ function _renderCard(call) {
       <!-- Header row (always visible, clickable to expand) -->
       <div class="g-card-head" onclick="gToggle('${call.id}')">
         <!-- Source badge -->
-        <div class="g-src ${call.source === 'granola' ? 'g-src--g' : 'g-src--m'}" title="${call.source === 'granola' ? 'Imported from Granola' : 'Manually logged'}">
-          ${call.source === 'granola' ? _gIcon(11) : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>'}
+        <div class="g-src g-src--m" title="Call log">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </div>
 
         <!-- Title + meta -->
