@@ -165,7 +165,13 @@ function _showAuthPanel(name) {
 }
 function showAuthLogin()       { _showAuthPanel('login'); }
 function showAuthVerify()      { _showAuthPanel('verify'); }
-function showAuthReset()       { _showAuthPanel('reset'); }
+function showAuthReset()       {
+  _showAuthPanel('reset');
+  const h = document.getElementById('new-password-hint');
+  if (h) h.innerHTML = '';
+  const c = document.getElementById('new-password-code');
+  if (c) c.value = '';
+}
 function showAuthNewPassword() { _showAuthPanel('new-password'); }
 
 async function showAuthRegister() {
@@ -297,8 +303,9 @@ function getOtpValue() {
 async function sendPasswordResetEmail(email, code) {
   console.log(`[Pulse] Password reset code for ${email}: ${code}`);
 
-  const hintEl = document.getElementById('reset-code-hint');
-  if (hintEl) hintEl.classList.remove('hidden');
+  // This hint lives on the new-password panel — it's already rendered (just hidden),
+  // so we can populate it now and it will be visible once the panel switches.
+  const hintEl = document.getElementById('new-password-hint');
 
   try {
     const ejsRaw = localStorage.getItem('pulse_emailjs_config');
@@ -314,7 +321,11 @@ async function sendPasswordResetEmail(email, code) {
         subject: 'Your Pulse CRM password reset code',
       });
       if (hintEl) {
-        hintEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400 text-sm font-medium"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Reset code sent to ${email}</span>`;
+        hintEl.innerHTML = `
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+            <svg style="width:16px;height:16px;color:#16a34a;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span style="font-size:13px;color:#15803d;font-weight:500;">Reset code sent to ${escapeHtml(email)}</span>
+          </div>`;
       }
       return;
     }
@@ -322,16 +333,27 @@ async function sendPasswordResetEmail(email, code) {
     console.warn('[Pulse] EmailJS reset email failed:', err);
   }
 
+  // No email service — show the code directly on the panel and auto-fill the input.
   if (hintEl) {
     hintEl.innerHTML = `
-      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px;">
-        <p style="font-size:12px;color:#92400e;margin-bottom:6px;font-weight:600;">No email service configured — your reset code is:</p>
-        <span style="font-family:monospace;font-size:20px;letter-spacing:0.3em;background:#f3f4f6;padding:6px 12px;border-radius:6px;">${code}</span>
-        <p style="font-size:11px;color:#9191a8;margin-top:8px;">
-          <button onclick="navigate('settings')" style="color:#6366f1;text-decoration:underline;background:none;border:none;cursor:pointer;">Configure EmailJS in Settings →</button>
-        </p>
+      <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:12px;">
+        <p style="font-size:12px;color:#1d4ed8;margin-bottom:8px;font-weight:600;">Your reset code (copy it below):</p>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="reset-code-display" style="font-family:monospace;font-size:22px;letter-spacing:0.3em;background:#fff;border:1px solid #bfdbfe;padding:6px 14px;border-radius:6px;color:#1e3a8a;">${code}</span>
+          <button type="button" onclick="
+            document.getElementById('new-password-code').value='${code}';
+            this.textContent='✓ Filled';this.style.color='#16a34a';"
+            style="font-size:12px;color:#2563eb;background:none;border:none;cursor:pointer;text-decoration:underline;white-space:nowrap;">
+            Auto-fill →
+          </button>
+        </div>
+        <p style="font-size:11px;color:#6b7280;margin-top:8px;">This code expires in 15 minutes. Enter it in the field below.</p>
       </div>`;
   }
+
+  // Also auto-fill the code input if it's already in the DOM
+  const codeInput = document.getElementById('new-password-code');
+  if (codeInput) codeInput.value = code;
 }
 
 async function sendVerificationEmail(email, code) {
