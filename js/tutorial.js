@@ -64,7 +64,7 @@ const TUTORIAL_STEPS = [
     id: 'done',
     icon: '🎉',
     title: "You're all set!",
-    body: "Ready to start your real search? Clear the sample data and go fresh — or keep it around while you get comfortable.",
+    body: "Ready to start your real search? Clear the sample data and go fresh — or keep it around while you get comfortable. You can always delete sample data later via <strong>Settings → Data Management → Clear Sample Data</strong>.",
     target: null,
     nav: 'dashboard',
     wide: true,
@@ -143,6 +143,9 @@ async function clearDemoData() {
       }
     } catch (_) { /* store might not exist in older DBs */ }
   }
+
+  // Prevent demo deal from re-appearing on next login
+  localStorage.setItem('pulse_demo_cleared_' + uid, '1');
 }
 
 // ── DOM management ────────────────────────────────────────────────────

@@ -501,6 +501,12 @@ async function renderReengageSuggestions(contacts, companyMap) {
 // Seed Demo Data
 // ============================================
 async function seedDemoData(userId) {
+  // Idempotency guard: don't seed if demo companies already exist for this user
+  try {
+    const existing = await DB.getAll(STORES.companies);
+    if (existing.some(c => c.userId === userId && c.isDemo)) return;
+  } catch (_) {}
+
   // Companies
   const companies = [
     { name: 'Alpine Investors', industry: 'Private Equity', size: '100-200', website: 'https://alpineinvestors.com', description: 'PeopleFirst PE firm focused on software and services', logoUrl: '' },
@@ -617,6 +623,8 @@ async function seedDemoData(userId) {
 // Seed Demo Deal — Apex Precision Manufacturing
 // ============================================
 async function seedDemoDeal(userId) {
+  // Don't re-seed if the user has already cleared demo data
+  if (localStorage.getItem('pulse_demo_cleared_' + userId)) return;
   // Only seed if the user has no deals yet
   const existing = await DB.getAll(STORES.deals).catch(() => []);
   if (existing.some(d => d.userId === userId)) return;
